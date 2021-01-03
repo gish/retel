@@ -1,12 +1,30 @@
 import axios from "axios";
 import Parser from "rss-parser";
+import { Sequelize } from "sequelize";
+import feed from "./models/feed";
 
 require("dotenv").config();
 const API_BASE_URL = process.env.API_BASE_URL ?? "";
 const AUTH_ACCESS_TOKEN = process.env.AUTH_ACCESS_TOKEN ?? "";
 const AUTH_CONSUMER_KEY = process.env.AUTH_CONSUMER_KEY ?? "";
 const PINTIFIER_KEY = process.env.PINTIFIER_KEY ?? "";
-const FEEDS = process.env.FEEDS ?? "";
+const MYSQL_HOST = process.env.MYSQL_HOST ?? "";
+const MYSQL_PORT = process.env.MYSQL_PORT ?? "";
+const MYSQL_DATABASE = process.env.MYSQL_DATABASE ?? "";
+const MYSQL_USERNAME = process.env.MYSQL_USERNAME ?? "";
+const MYSQL_PASSWORD = process.env.MYSQL_PASSWORD ?? "";
+const CLEARDB_DATABASE_URL = process.env.CLEARDB_DATABASE_URL ?? "";
+const ENV = process.env.NODE_ENV ?? "development";
+
+const dbUri = CLEARDB_DATABASE_URL.length
+  ? CLEARDB_DATABASE_URL
+  : `mysql://${MYSQL_USERNAME}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}`;
+const sequelizeConnector = new Sequelize(dbUri, {
+  logging: ENV !== "production" && console.log,
+});
+
+const Feed = feed(sequelizeConnector);
+sequelizeConnector.sync();
 
 const isPublishedToday = (item: Parser.Item) => {
   const publishDate = new Date(item.isoDate ?? 0);
@@ -24,6 +42,7 @@ const getNewItemsFromFeed = async (url: string) => {
     return item.link ? [...all, item.link] : all;
   }, []);
 };
+
 const addUrlToList = (url: string) => {
   console.log(`Adding ${url}`);
   logAddToSlack(url);
@@ -57,9 +76,10 @@ const logAddToSlack = async (url: string) => {
 
 const run = async () => {
   try {
+    const feeds = await Feed.findAll();
     await Promise.all(
-      FEEDS.split(",").map(async (feedUrl) => {
-        const items = await getNewItemsFromFeed(feedUrl);
+      feeds.map(async (feed) => {
+        const items = await getNewItemsFromFeed(feed.url);
         await Promise.all(items.map(addUrlToList));
       })
     );
