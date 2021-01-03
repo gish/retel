@@ -26,17 +26,12 @@ const sequelizeConnector = new Sequelize(dbUri, {
 const Feed = feed(sequelizeConnector);
 sequelizeConnector.sync();
 
-const isPublishedToday = (item: Parser.Item) => {
-  const publishDate = new Date(item.isoDate ?? 0);
-  const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-  return publishDate.getTime() >= oneDayAgo;
-};
-
-const getNewItemsFromFeed = async (url: string) => {
+const getNewItemsFromFeed = async (url: string, refreshDate: Date) => {
   const parser = new Parser();
   const feed = await parser.parseURL(url);
   return feed.items.reduce<string[]>((all, item) => {
-    if (!isPublishedToday(item)) {
+    const publishDate = new Date(item.isoDate ?? 0);
+    if (publishDate.getTime() < refreshDate.getTime()) {
       return all;
     }
     return item.link ? [...all, item.link] : all;
@@ -79,7 +74,10 @@ const run = async () => {
     const feeds = await Feed.findAll();
     await Promise.all(
       feeds.map(async (feed) => {
-        const items = await getNewItemsFromFeed(feed.url);
+        const items = await getNewItemsFromFeed(
+          feed.url,
+          new Date(feed.lastRefresh)
+        );
         await Promise.all(items.map(addUrlToList));
         feed.update({ lastRefresh: Sequelize.fn("NOW") });
       })
