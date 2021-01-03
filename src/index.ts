@@ -81,6 +81,7 @@ const run = async () => {
       feeds.map(async (feed) => {
         const items = await getNewItemsFromFeed(feed.url);
         await Promise.all(items.map(addUrlToList));
+        feed.update({ lastRefresh: Sequelize.fn("NOW") });
       })
     );
   } catch (e) {
