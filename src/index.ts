@@ -45,7 +45,7 @@ const getNewItemsFromFeed = async (url: string, refreshDate: Date) => {
 };
 
 const addUrlToList = (url: string) => {
-  console.log(`Adding ${url}`);
+  log(`Adding ${url}`);
   logAddToSlack(url);
   return axios({
     method: "post",
