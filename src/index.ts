@@ -14,7 +14,12 @@ const MYSQL_DATABASE = process.env.MYSQL_DATABASE ?? "";
 const MYSQL_USERNAME = process.env.MYSQL_USERNAME ?? "";
 const MYSQL_PASSWORD = process.env.MYSQL_PASSWORD ?? "";
 const CLEARDB_DATABASE_URL = process.env.CLEARDB_DATABASE_URL ?? "";
+const DEBUG = (process.env.DEBUG ?? "false") === "true";
 const ENV = process.env.NODE_ENV ?? "development";
+
+const logger = (debug: boolean) => (...message: any[]) =>
+  debug && console.log(...message);
+const log = logger(DEBUG);
 
 const dbUri = CLEARDB_DATABASE_URL.length
   ? CLEARDB_DATABASE_URL
@@ -31,6 +36,7 @@ const getNewItemsFromFeed = async (url: string, refreshDate: Date) => {
   const feed = await parser.parseURL(url);
   return feed.items.reduce<string[]>((all, item) => {
     const publishDate = new Date(item.isoDate ?? 0);
+    log("checking", item.link, item.isoDate, refreshDate);
     if (publishDate.getTime() < refreshDate.getTime()) {
       return all;
     }
@@ -78,6 +84,7 @@ const run = async () => {
           feed.url,
           new Date(feed.lastRefresh)
         );
+        log("will add", items);
         await Promise.all(items.map(addUrlToList));
         feed.update({ lastRefresh: Sequelize.fn("NOW") });
       })
