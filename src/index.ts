@@ -34,19 +34,20 @@ sequelizeConnector.sync();
 const getNewItemsFromFeed = async (url: string, refreshDate: Date) => {
   const parser = new Parser();
   const feed = await parser.parseURL(url);
-  return feed.items.reduce<string[]>((all, item) => {
+  return feed.items.filter((item: Parser.Item) => {
     const publishDate = new Date(item.isoDate ?? 0);
     log("checking", item.link, item.isoDate, refreshDate);
-    if (publishDate.getTime() < refreshDate.getTime()) {
-      return all;
-    }
-    return item.link ? [...all, item.link] : all;
-  }, []);
+    return publishDate.getTime() >= refreshDate.getTime();
+  });
 };
 
-const addUrlToList = (url: string) => {
-  log(`Adding ${url}`);
-  logAddToSlack(url);
+const addFeedItemToList = (item: Parser.Item) => {
+  if (!item.link) {
+    log(`Could not add ${item.title}`);
+    return new Promise((resolve) => resolve(false));
+  }
+  log(`Adding ${item.link}`);
+  logAddToSlack(item.link);
   return axios({
     method: "post",
     url: `${API_BASE_URL}/add`,
@@ -54,7 +55,7 @@ const addUrlToList = (url: string) => {
       access_token: AUTH_ACCESS_TOKEN,
       consumer_key: AUTH_CONSUMER_KEY,
       tags: "retel",
-      url,
+      url: item.link,
     },
   });
 };
@@ -84,8 +85,11 @@ const run = async () => {
           feed.url,
           new Date(feed.lastRefresh)
         );
-        log("will add", items);
-        await Promise.all(items.map(addUrlToList));
+        log(
+          "will add",
+          items.map((item) => item.title)
+        );
+        await Promise.all(items.map(addFeedItemToList));
         feed.update({ lastRefresh: Sequelize.fn("NOW") });
       })
     );
