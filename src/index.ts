@@ -41,7 +41,7 @@ const getNewItemsFromFeed = async (url: string, refreshDate: Date) => {
   });
 };
 
-const addFeedItemToList = (item: Parser.Item) => {
+const addFeedItemToList = (tags: string) => (item: Parser.Item) => {
   if (!item.link) {
     log(`Could not add ${item.title}`);
     return new Promise((resolve) => resolve(false));
@@ -54,7 +54,7 @@ const addFeedItemToList = (item: Parser.Item) => {
     data: {
       access_token: AUTH_ACCESS_TOKEN,
       consumer_key: AUTH_CONSUMER_KEY,
-      tags: "retel",
+      tags: `retel,${tags}`,
       url: item.link,
     },
   });
@@ -89,7 +89,7 @@ const run = async () => {
           "will add",
           items.map((item) => item.title)
         );
-        await Promise.all(items.map(addFeedItemToList));
+        await Promise.all(items.map(addFeedItemToList(feed.tags)));
         feed.update({ lastRefresh: Sequelize.fn("NOW") });
       })
     );
