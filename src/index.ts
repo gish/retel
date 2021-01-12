@@ -2,20 +2,24 @@ import axios from "axios";
 import Parser from "rss-parser";
 import { Sequelize } from "sequelize";
 import feed from "./models/feed";
+import getEnv from "./utils/get-env";
 
 require("dotenv").config();
-const API_BASE_URL = process.env.API_BASE_URL ?? "";
-const AUTH_ACCESS_TOKEN = process.env.AUTH_ACCESS_TOKEN ?? "";
-const AUTH_CONSUMER_KEY = process.env.AUTH_CONSUMER_KEY ?? "";
-const PINTIFIER_KEY = process.env.PINTIFIER_KEY ?? "";
-const MYSQL_HOST = process.env.MYSQL_HOST ?? "";
-const MYSQL_PORT = process.env.MYSQL_PORT ?? "";
-const MYSQL_DATABASE = process.env.MYSQL_DATABASE ?? "";
-const MYSQL_USERNAME = process.env.MYSQL_USERNAME ?? "";
-const MYSQL_PASSWORD = process.env.MYSQL_PASSWORD ?? "";
-const CLEARDB_DATABASE_URL = process.env.CLEARDB_DATABASE_URL ?? "";
-const DEBUG = (process.env.DEBUG ?? "false") === "true";
-const ENV = process.env.NODE_ENV ?? "development";
+const API_BASE_URL = getEnv<string>("API_BASE_URL");
+const AUTH_ACCESS_TOKEN = getEnv<string>("AUTH_ACCESS_TOKEN");
+const AUTH_CONSUMER_KEY = getEnv<string>("AUTH_CONSUMER_KEY");
+const PINTIFIER_KEY = getEnv<string>("PINTIFIER_KEY");
+const MYSQL_HOST = getEnv<string>("MYSQL_HOST");
+const MYSQL_PORT = getEnv<string>("MYSQL_PORT");
+const MYSQL_DATABASE = getEnv<string>("MYSQL_DATABASE");
+const MYSQL_USERNAME = getEnv<string>("MYSQL_USERNAME");
+const MYSQL_PASSWORD = getEnv(<string>"MYSQL_PASSWORD");
+const CLEARDB_DATABASE_URL = getEnv<string>("CLEARDB_DATABASE_URL");
+const ENV = getEnv<string>("NODE_ENV", { defaultValue: "development" });
+const DEBUG = getEnv<boolean>("DEBUG", {
+  defaultValue: "false",
+  modifier: (value: string) => value === "true",
+});
 
 const logger = (debug: boolean) => (...message: any[]) =>
   debug && console.log(...message);
