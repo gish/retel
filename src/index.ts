@@ -35,13 +35,13 @@ const sequelizeConnector = new Sequelize(dbUri, {
 const Feed = feed(sequelizeConnector);
 sequelizeConnector.sync();
 
-const getNewItemsFromFeed = async (url: string, refreshDate: Date) => {
+const getNewItemsFromFeed = async (url: string, latestAdd: number) => {
   const parser = new Parser();
   const feed = await parser.parseURL(url);
   return feed.items.filter((item: Parser.Item) => {
     const publishDate = new Date(item.isoDate ?? 0);
-    log("checking", item.link, item.isoDate, refreshDate);
-    return publishDate.getTime() >= refreshDate.getTime();
+    log("checking", item.link, item.isoDate, latestAdd);
+    return publishDate.getTime() > latestAdd;
   });
 };
 
@@ -85,16 +85,17 @@ const run = async () => {
     const feeds = await Feed.findAll();
     await Promise.all(
       feeds.map(async (feed) => {
-        const items = await getNewItemsFromFeed(
-          feed.url,
-          new Date(feed.lastRefresh)
-        );
+        const items = await getNewItemsFromFeed(feed.url, feed.latestAdd);
         log(
           "will add",
           items.map((item) => item.title)
         );
         await Promise.all(items.map(addFeedItemToList(feed.tags)));
-        feed.update({ lastRefresh: Sequelize.fn("NOW") });
+        const latestAdd = items.reduce<number>((last, item) => {
+          const publishDate = new Date(item.isoDate ?? 0);
+          return publishDate.getTime() > last ? publishDate.getTime() : last;
+        }, feed.latestAdd);
+        feed.update({ latestAdd });
       })
     );
   } catch (e) {

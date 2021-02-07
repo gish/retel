@@ -2,7 +2,7 @@ import { Sequelize, DataTypes, Model } from "sequelize";
 
 interface FeedProps {
   url: string;
-  lastRefresh: string;
+  latestAdd: number;
   tags: string;
 }
 
@@ -13,10 +13,10 @@ const Feed = (sequelize: Sequelize) =>
       type: DataTypes.STRING,
       allowNull: false,
     },
-    lastRefresh: {
-      type: DataTypes.DATE,
+    latestAdd: {
+      type: DataTypes.BIGINT,
       allowNull: false,
-      defaultValue: DataTypes.NOW,
+      defaultValue: 0,
     },
     tags: {
       type: DataTypes.STRING,
