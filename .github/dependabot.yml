@@ -1,14 +1,9 @@
 version: 2
 updates:
-- package-ecosystem: npm
-  directory: "/"
-  schedule:
-    interval: daily
-    time: "00:00"
-    timezone: CET
-  open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: "@types/node"
-    versions:
-    - 14.14.36
-    - 15.0.0
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "00:00"
+      timezone: CET
+    open-pull-requests-limit: 10
